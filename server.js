@@ -842,12 +842,13 @@ app.use((req, res) => {
 async function startServer() {
   try {
     await initDB();
-    app.listen(PORT, () => {
-      console.log(`🚀 BCA Attendance Portal server running at http://localhost:${PORT}`);
-    });
   } catch (error) {
-    console.error('Failed to start server:', error);
+    console.error('Warning during database initialization:', error.message);
   }
+
+  app.listen(PORT, () => {
+    console.log(`🚀 BCA Attendance Portal server running at http://localhost:${PORT}`);
+  });
 }
 
 startServer();

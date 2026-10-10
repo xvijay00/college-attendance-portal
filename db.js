@@ -8,7 +8,26 @@ let allAsync = null;
 let getAsync = null;
 let initDB = null;
 
-const DATABASE_URL = process.env.DATABASE_URL ? process.env.DATABASE_URL.trim() : '';
+// Helper to ensure IPv4 compatibility on cloud hosts (e.g. Render free tier)
+function formatSupabaseUrl(url) {
+  if (!url) return '';
+  const cleanUrl = url.trim();
+  // Direct Supabase hostname (db.<project>.supabase.co:5432) resolves only to IPv6!
+  // Cloud providers without IPv6 (like Render free tier) fail with ENETUNREACH.
+  // We automatically rewrite to Supabase's IPv4 Connection Pooler (port 6543).
+  const match = cleanUrl.match(/^postgresql:\/\/([^:]+):([^@]+)@db\.([a-z0-9]+)\.supabase\.co(?::\d+)?\/(.*)$/);
+  if (match) {
+    const [, user, pass, projectRef, dbName] = match;
+    const finalUser = user.includes('.') ? user : `${user}.${projectRef}`;
+    const poolerUrl = `postgresql://${finalUser}:${pass}@aws-0-ap-south-1.pooler.supabase.com:6543/${dbName}`;
+    console.log('🔄 Rewriting direct IPv6 Supabase URL to IPv4 Connection Pooler for cloud host compatibility.');
+    return poolerUrl;
+  }
+  return cleanUrl;
+}
+
+const rawDbUrl = process.env.DATABASE_URL ? process.env.DATABASE_URL.trim() : '';
+const DATABASE_URL = formatSupabaseUrl(rawDbUrl);
 
 if (DATABASE_URL) {
   // =========================================================================
@@ -22,7 +41,8 @@ if (DATABASE_URL) {
 
   const pool = new Pool({
     connectionString: DATABASE_URL,
-    ssl: DATABASE_URL.includes('localhost') ? false : { rejectUnauthorized: false }
+    ssl: DATABASE_URL.includes('localhost') ? false : { rejectUnauthorized: false },
+    connectionTimeoutMillis: 10000
   });
 
   db = pool;
@@ -72,7 +92,7 @@ if (DATABASE_URL) {
       console.log('🕒 Supabase Server Time:', res.rows[0].current_time);
     } catch (err) {
       console.error('❌ Failed to connect to Supabase PostgreSQL:', err.message);
-      console.error('Please check your DATABASE_URL in .env file');
+      console.error('Please verify your DATABASE_URL in Render environment settings.');
       throw err;
     }
   };
