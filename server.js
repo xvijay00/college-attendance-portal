@@ -80,7 +80,7 @@ app.post('/api/auth/login', async (req, res) => {
     });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ error: 'Internal server error during login' });
+    res.status(500).json({ error: error.message || 'Internal server error during login' });
   }
 });
 
@@ -121,7 +121,7 @@ app.post('/api/auth/register', async (req, res) => {
     });
   } catch (error) {
     console.error('Register error:', error);
-    res.status(500).json({ error: 'Failed to register teacher' });
+    res.status(500).json({ error: error.message || 'Failed to register teacher' });
   }
 });
 

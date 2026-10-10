@@ -12,15 +12,21 @@ let initDB = null;
 function formatSupabaseUrl(url) {
   if (!url) return '';
   const cleanUrl = url.trim();
+
+  if (cleanUrl.includes('[YOUR-PASSWORD]')) {
+    console.error('⚠️ CRITICAL: DATABASE_URL contains "[YOUR-PASSWORD]". Please replace it with your real Supabase password in Render environment variables!');
+  }
+
   // Direct Supabase hostname (db.<project>.supabase.co:5432) resolves only to IPv6!
   // Cloud providers without IPv6 (like Render free tier) fail with ENETUNREACH.
   // We automatically rewrite to Supabase's IPv4 Connection Pooler (port 6543).
+  // Project nwcbmyntxijmcnzowoyc is located in AWS region ap-southeast-2 (Sydney)
   const match = cleanUrl.match(/^postgresql:\/\/([^:]+):([^@]+)@db\.([a-z0-9]+)\.supabase\.co(?::\d+)?\/(.*)$/);
   if (match) {
     const [, user, pass, projectRef, dbName] = match;
     const finalUser = user.includes('.') ? user : `${user}.${projectRef}`;
-    const poolerUrl = `postgresql://${finalUser}:${pass}@aws-0-ap-south-1.pooler.supabase.com:6543/${dbName}`;
-    console.log('🔄 Rewriting direct IPv6 Supabase URL to IPv4 Connection Pooler for cloud host compatibility.');
+    const poolerUrl = `postgresql://${finalUser}:${pass}@aws-0-ap-southeast-2.pooler.supabase.com:6543/${dbName}`;
+    console.log('🔄 Rewriting direct IPv6 Supabase URL to IPv4 Connection Pooler (ap-southeast-2) for Render compatibility.');
     return poolerUrl;
   }
   return cleanUrl;
@@ -90,6 +96,16 @@ if (DATABASE_URL) {
       const res = await pool.query('SELECT NOW() as current_time');
       console.log('✅ Connected to Supabase PostgreSQL database successfully!');
       console.log('🕒 Supabase Server Time:', res.rows[0].current_time);
+
+      // Auto-sync sequence IDs so nextval never collides with existing IDs
+      const syncTables = ['teachers', 'students', 'subjects', 'holidays', 'attendance_sessions', 'attendance_records'];
+      for (const t of syncTables) {
+        try {
+          await pool.query(`SELECT setval(pg_get_serial_sequence('public.${t}', 'id'), COALESCE((SELECT MAX(id) FROM public.${t}), 1), true)`);
+        } catch (e) {
+          // ignore
+        }
+      }
     } catch (err) {
       console.error('❌ Failed to connect to Supabase PostgreSQL:', err.message);
       console.error('Please verify your DATABASE_URL in Render environment settings.');
