@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BCA Department Attendance Portal | College Academic Management</title>
+  <meta name="description" content="Official modern web application for BCA department student attendance tracking, vacation exemptions, database storage, and defaulters analytics.">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%234f46e5%22/><text x=%2250%%22 y=%2265%%22 text-anchor=%22middle%22 font-family=%22sans-serif%22 font-size=%2255%22 font-weight=%22bold%22 fill=%22white%22>BCA</text></svg>">
+</head>
+<body>
+
+  <!-- ======================== LOGIN / REGISTER OVERLAY ======================== -->
+  <div id="loginOverlay" class="login-screen-wrapper">
+    <div class="login-card">
+      <div class="login-brand-header">
+        <div class="login-logo-icon">BCA</div>
+        <h2>BCA Department Portal</h2>
+        <p>Faculty & Academic Attendance System</p>
+      </div>
+
+      <!-- Demo Credentials Quick Buttons -->
+      <div class="demo-credentials-box">
+        <h4>Quick Demo Credentials</h4>
+        <p style="color: var(--text-dim); margin-bottom: 0.4rem;">Click below to auto-fill pre-seeded credentials:</p>
+        <div class="demo-quick-buttons">
+          <button type="button" class="btn-demo-pill" id="btnFillAdmin">HOD / Admin</button>
+          <button type="button" class="btn-demo-pill" id="btnFillFaculty">Faculty</button>
+        </div>
+      </div>
+
+      <!-- Auth Tabs: Login vs Register -->
+      <div style="display: flex; gap: 0.5rem; margin-bottom: 1.2rem; background: rgba(15, 23, 42, 0.7); padding: 0.3rem; border-radius: var(--radius-pill); border: 1px solid var(--border-subtle);">
+        <button type="button" id="tabAuthLogin" class="btn-batch" style="flex: 1; border-radius: var(--radius-pill); background: var(--accent-gradient); color: #fff;">Teacher Login</button>
+        <button type="button" id="tabAuthRegister" class="btn-batch" style="flex: 1; border-radius: var(--radius-pill); background: transparent; color: var(--text-muted);">Register Faculty</button>
+      </div>
+
+      <!-- Login Form -->
+      <form id="loginForm">
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label for="loginEmail">Email Address</label>
+          <input type="email" id="loginEmail" class="form-input" placeholder="e.g. hod.bca@college.edu" required autocomplete="email">
+        </div>
+        <div class="form-group" style="margin-bottom: 1.5rem;">
+          <label for="loginPassword">Password</label>
+          <input type="password" id="loginPassword" class="form-input" placeholder="••••••••" required autocomplete="current-password">
+        </div>
+        <button type="submit" id="btnSubmitLogin" class="btn-primary" style="width: 100%; justify-content: center; padding: 0.8rem;">
+          Secure Login &rarr;
+        </button>
+      </form>
+
+      <!-- Register Form -->
+      <form id="registerForm" style="display: none;">
+        <div class="form-group" style="margin-bottom: 0.8rem;">
+          <label for="regName">Full Name</label>
+          <input type="text" id="regName" class="form-input" placeholder="e.g. Prof. Ramesh Verma" required>
+        </div>
+        <div class="form-group" style="margin-bottom: 0.8rem;">
+          <label for="regEmail">Email Address</label>
+          <input type="email" id="regEmail" class="form-input" placeholder="e.g. ramesh@bca.edu" required>
+        </div>
+        <div class="form-group" style="margin-bottom: 0.8rem;">
+          <label for="regEmpId">Employee / Faculty ID</label>
+          <input type="text" id="regEmpId" class="form-input" placeholder="e.g. EMP-BCA-005" required>
+        </div>
+        <div class="form-group" style="margin-bottom: 0.8rem;">
+          <label for="regDesignation">Designation</label>
+          <select id="regDesignation" class="form-select">
+            <option value="Assistant Professor">Assistant Professor</option>
+            <option value="Associate Professor">Associate Professor</option>
+            <option value="Professor">Professor</option>
+            <option value="Lecturer">Lecturer</option>
+            <option value="Lab Instructor">Lab Instructor</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom: 1.4rem;">
+          <label for="regPassword">Password</label>
+          <input type="password" id="regPassword" class="form-input" placeholder="At least 6 characters" required>
+        </div>
+        <button type="submit" id="btnSubmitRegister" class="btn-primary" style="width: 100%; justify-content: center; padding: 0.8rem;">
+          Create Faculty Account &rarr;
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================== MAIN PORTAL NAVIGATION ======================== -->
+  <header class="top-navbar">
+    <div class="brand-wrapper">
+      <div class="brand-badge">BCA</div>
+      <div class="brand-info">
+        <h1>BCA Department Portal</h1>
+        <p>Department of Computer Applications</p>
+      </div>
+    </div>
+
+    <!-- Main Navigation Tabs -->
+    <nav class="nav-links" aria-label="Portal Navigation">
+      <button type="button" class="nav-btn active" data-tab="tab-dashboard" id="navDashboard">
+        <span>Dashboard</span>
+      </button>
+      <button type="button" class="nav-btn" data-tab="tab-attendance" id="navAttendance">
+        <span>Mark Attendance</span>
+      </button>
+      <button type="button" class="nav-btn" data-tab="tab-students" id="navStudents">
+        <span>Students</span>
+      </button>
+      <button type="button" class="nav-btn" data-tab="tab-holidays" id="navHolidays">
+        <span>Vacations</span>
+      </button>
+      <button type="button" class="nav-btn" data-tab="tab-reports" id="navReports">
+        <span>Reports & Analytics</span>
+      </button>
+    </nav>
+
+    <!-- Logged in User Meta & Logout -->
+    <div class="nav-user">
+      <div class="user-pill">
+        <div class="user-avatar" id="navUserAvatar">T</div>
+        <div class="user-meta">
+          <span class="user-meta-name" id="navUserName">Teacher</span>
+          <span class="user-meta-role" id="navUserRole">Faculty</span>
+        </div>
+      </div>
+      <button type="button" class="btn-logout" id="btnLogout" title="Logout from portal">
+        <span>Logout</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ======================== MAIN CONTENT VIEWS ======================== -->
+  <main class="app-container">
+
+    <!-- 1. DASHBOARD VIEW -->
+    <section id="tab-dashboard" class="view-section active">
+      <div class="section-header">
+        <div>
+          <h2>BCA Department Overview</h2>
+          <p>Real-time academic attendance monitoring & department metrics</p>
+        </div>
+        <div class="header-actions">
+          <button type="button" class="btn-primary" id="btnQuickMarkAttendance">
+            Mark New Attendance
+          </button>
+          <button type="button" class="btn-vacation" id="btnQuickAddVacation">
+            Declare Vacation
+          </button>
+        </div>
+      </div>
+
+      <!-- KPI Grid -->
+      <div class="stats-grid">
+        <div class="stat-card glass-panel">
+          <div class="stat-header">
+            <span class="stat-label">Total BCA Students</span>
+            
+          </div>
+          <div class="stat-value" id="kpiTotalStudents">--</div>
+          <div class="stat-desc">Enrolled across Sem 1 to Sem 6</div>
+        </div>
+
+        <div class="stat-card glass-panel present-card">
+          <div class="stat-header">
+            <span class="stat-label">Overall Attendance</span>
+            
+          </div>
+          <div class="stat-value" id="kpiOverallPct">--%</div>
+          <div class="stat-desc" id="kpiPresentCountDesc">Total records in database</div>
+        </div>
+
+        <div class="stat-card glass-panel warning-card">
+          <div class="stat-header">
+            <span class="stat-label">Low Attendance Alert</span>
+            
+          </div>
+          <div class="stat-value" id="kpiDefaultersCount" style="color: #fbbf24;">--</div>
+          <div class="stat-desc">Students below mandatory 75%</div>
+        </div>
+
+        <div class="stat-card glass-panel vacation-card">
+          <div class="stat-header">
+            <span class="stat-label">Declared Vacations</span>
+            
+          </div>
+          <div class="stat-value" id="kpiTotalHolidays" style="color: #f472b6;">--</div>
+          <div class="stat-desc">Exempted calendar days</div>
+        </div>
+      </div>
+
+      <!-- Recent Sessions & Quick Summary Grid -->
+      <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-top: 1.5rem;" class="dashboard-split-grid">
+        <!-- Recent Attendance Sessions -->
+        <div class="glass-panel" style="padding: 1.6rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem;">
+            <h3 style="font-size: 1.15rem; font-weight: 700;">Recent Attendance Sessions</h3>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">Stored in SQLite Database</span>
+          </div>
+          <div style="overflow-x: auto;">
+            <table class="custom-table" id="tableRecentSessions">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Semester</th>
+                  <th>Subject</th>
+                  <th>Present / Total</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyRecentSessions">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Semester Student Distribution -->
+        <div class="glass-panel" style="padding: 1.6rem;">
+          <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 1.2rem;">Students by Semester</h3>
+          <div id="semesterDistributionList" style="display: flex; flex-direction: column; gap: 0.9rem;">
+            <!-- Dynamically populated -->
+          </div>
+          <hr style="border: 0; border-top: 1px solid var(--border-subtle); margin: 1.5rem 0;">
+          <div style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: var(--radius-md); padding: 1rem;">
+            <h4 style="font-size: 0.85rem; color: #a5b4fc; margin-bottom: 0.3rem;">University 75% Rule</h4>
+            <p style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.4;">
+              As per BCA university regulations, minimum 75% attendance is mandatory for semester exams. Check the Reports tab for defaulter notifications.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. MARK ATTENDANCE VIEW -->
+    <section id="tab-attendance" class="view-section">
+      <div class="section-header">
+        <div>
+          <h2>Mark Class Attendance</h2>
+          <p>Record daily student attendance by class, subject, and date</p>
+        </div>
+        <div class="header-actions">
+          <button type="button" class="btn-vacation" id="btnMarkVacationFromAttendance">
+            Declare This Date as Vacation
+          </button>
+        </div>
+      </div>
+
+      <!-- Attendance Filter / Selection Controls -->
+      <div class="attendance-control-bar glass-panel">
+        <div class="form-group">
+          <label for="attSemesterSelect">Select Class / Semester</label>
+          <select id="attSemesterSelect" class="form-select">
+            <option value="BCA 1st Sem">BCA 1st Semester</option>
+            <option value="BCA 2nd Sem">BCA 2nd Semester</option>
+            <option value="BCA 3rd Sem" selected>BCA 3rd Semester</option>
+            <option value="BCA 4th Sem">BCA 4th Semester</option>
+            <option value="BCA 5th Sem">BCA 5th Semester</option>
+            <option value="BCA 6th Sem">BCA 6th Semester</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="attSubjectSelect">Select Subject / Paper</label>
+          <select id="attSubjectSelect" class="form-select">
+            <!-- Populated dynamically based on semester -->
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="attDatePicker">Attendance Date</label>
+          <div style="display: flex; gap: 0.4rem;">
+            <input type="date" id="attDatePicker" class="form-input" style="flex: 1;">
+            <button type="button" class="btn-secondary" id="btnAttToday" style="padding: 0.5rem 0.8rem; font-size: 0.8rem;">Today</button>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem;">
+          <button type="button" class="btn-primary" id="btnLoadRoster" style="height: 42px;">
+            Load Class
+          </button>
+        </div>
+      </div>
+
+      <!-- Vacation Warning / Exemption Banner -->
+      <div id="vacationBanner" class="vacation-banner">
+        <div class="vacation-banner-info">
+          
+          <div>
+            <div class="vacation-banner-title" id="vacationBannerTitle">Vacation Day Declared</div>
+            <div class="vacation-banner-desc" id="vacationBannerDesc">
+              This day is designated as an official holiday/vacation. Attendance for students is escaped and exempted.
+            </div>
+          </div>
+        </div>
+        <button type="button" class="btn-secondary" id="btnProceedAnyway" style="font-size: 0.8rem;">
+          Proceed Anyway
+        </button>
+      </div>
+
+      <!-- Quick Action Strip & Live Counters -->
+      <div class="quick-action-bar">
+        <div class="live-metrics-strip">
+          <div class="live-metric-item">
+            <span class="metric-dot present"></span>
+            <span>Present: <strong id="counterPresent" style="color: var(--color-present);">0</strong></span>
+          </div>
+          <div class="live-metric-item">
+            <span class="metric-dot absent"></span>
+            <span>Absent: <strong id="counterAbsent" style="color: var(--color-absent);">0</strong></span>
+          </div>
+          <div class="live-metric-item">
+            <span class="metric-dot leave"></span>
+            <span>Leave: <strong id="counterLeave" style="color: var(--color-leave);">0</strong></span>
+          </div>
+          <div class="live-metric-item" style="color: var(--text-dim); margin-left: 0.5rem;">
+            <span>Total: <strong id="counterTotal">0</strong></span>
+          </div>
+        </div>
+
+        <div class="attendance-batch-buttons">
+          <button type="button" class="btn-batch" id="btnMarkAllPresent">Mark All Present</button>
+          <button type="button" class="btn-batch" id="btnMarkAllAbsent">Mark All Absent</button>
+          <button type="button" class="btn-batch" id="btnInvertAttendance">Invert Selection</button>
+        </div>
+      </div>
+
+      <!-- Attendance Roster Table -->
+      <div class="glass-panel roster-card">
+        <div style="overflow-x: auto;">
+          <table class="custom-table" id="tableAttendanceRoster">
+            <thead>
+              <tr>
+                <th style="width: 60px;">Tick</th>
+                <th style="width: 140px;">Roll No</th>
+                <th>Student Name</th>
+                <th style="width: 80px;">Sec</th>
+                <th style="width: 320px;">Attendance Status</th>
+                <th>Remarks / Reason</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyAttendanceRoster">
+              <!-- Dynamically populated with student records and tickboxes -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Save Attendance Floating/Sticky Footer Action -->
+      <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(17, 24, 39, 0.8); backdrop-filter: blur(16px); padding: 1.2rem 1.8rem; border-radius: var(--radius-lg); border: 1px solid var(--border-glass); margin-top: 1rem;">
+        <div>
+          <span id="savedStatusBadge" style="font-size: 0.85rem; color: var(--text-muted);">
+            Tick the box or switch status pills, then save into the database.
+          </span>
+        </div>
+        <div style="display: flex; gap: 0.8rem;">
+          <button type="button" class="btn-success" id="btnSaveAttendance">
+            Save Attendance to Database
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. STUDENTS ROSTER VIEW -->
+    <section id="tab-students" class="view-section">
+      <div class="section-header">
+        <div>
+          <h2>BCA Student Directory</h2>
+          <p>Manage student profiles, enrollments, roll numbers, and contact details</p>
+        </div>
+        <div class="header-actions">
+          <button type="button" class="btn-primary" id="btnOpenAddStudentModal">
+            Add New Student
+          </button>
+        </div>
+      </div>
+
+      <!-- Search & Filter Controls -->
+      <div class="glass-panel" style="padding: 1.2rem 1.6rem; margin-bottom: 1.5rem; display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between;">
+        <div style="display: flex; gap: 1rem; flex: 1; min-width: 280px;">
+          <input type="text" id="studentSearchInput" class="form-input" placeholder="Search student by name, roll no, email..." style="flex: 1;">
+          <select id="studentSemesterFilter" class="form-select" style="max-width: 220px;">
+            <option value="ALL">All Semesters</option>
+            <option value="BCA 1st Sem">BCA 1st Semester</option>
+            <option value="BCA 2nd Sem">BCA 2nd Semester</option>
+            <option value="BCA 3rd Sem">BCA 3rd Semester</option>
+            <option value="BCA 4th Sem">BCA 4th Semester</option>
+            <option value="BCA 5th Sem">BCA 5th Semester</option>
+            <option value="BCA 6th Sem">BCA 6th Semester</option>
+          </select>
+        </div>
+        <div style="font-size: 0.85rem; color: var(--text-muted);">
+          Total Students: <strong id="studentListCount" style="color: #fff;">0</strong>
+        </div>
+      </div>
+
+      <!-- Students Table -->
+      <div class="glass-panel roster-card">
+        <div style="overflow-x: auto;">
+          <table class="custom-table" id="tableStudents">
+            <thead>
+              <tr>
+                <th>Roll No</th>
+                <th>Student Name</th>
+                <th>Semester</th>
+                <th>Section</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyStudents">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. VACATIONS & HOLIDAYS VIEW -->
+    <section id="tab-holidays" class="view-section">
+      <div class="section-header">
+        <div>
+          <h2>Vacations & Official Holidays</h2>
+          <p>Declare holidays and vacations to automatically escape and excuse attendance</p>
+        </div>
+        <div class="header-actions">
+          <button type="button" class="btn-vacation" id="btnOpenDeclareVacationModal">
+            Add New Vacation Day
+          </button>
+        </div>
+      </div>
+
+      <!-- Vacation Explanation Card -->
+      <div class="glass-panel" style="padding: 1.5rem; margin-bottom: 1.8rem; background: linear-gradient(135deg, rgba(236, 72, 153, 0.1) 0%, rgba(99, 102, 241, 0.1) 100%); border-left: 4px solid #ec4899;">
+        <h3 style="font-size: 1.1rem; font-weight: 700; color: #f472b6; margin-bottom: 0.4rem;">
+          How Vacation Exemption Works
+        </h3>
+        <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.5;">
+          When any calendar date is declared as a Vacation or Official Holiday, the attendance portal will automatically flag that day. Students' attendance is <strong>escaped and excluded from working session totals</strong>, ensuring no student is unfairly marked absent during college breaks or festival holidays.
+        </p>
+      </div>
+
+      <!-- Vacations Table -->
+      <div class="glass-panel roster-card">
+        <div style="overflow-x: auto;">
+          <table class="custom-table" id="tableHolidays">
+            <thead>
+              <tr>
+                <th style="width: 140px;">Date</th>
+                <th>Holiday / Vacation Title</th>
+                <th>Reason / Description</th>
+                <th>Declared By</th>
+                <th style="width: 120px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyHolidays">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. REPORTS & ANALYTICS VIEW -->
+    <section id="tab-reports" class="view-section">
+      <div class="section-header">
+        <div>
+          <h2>Attendance Analytics & Reports</h2>
+          <p>Aggregate student attendance statistics: Total, Present, Absent, Leave & Defaulters</p>
+        </div>
+        <div class="header-actions">
+          <button type="button" class="btn-secondary" id="btnExportCSV">
+            Export to CSV
+          </button>
+          <button type="button" class="btn-secondary" id="btnPrintReport">
+            Print Report
+          </button>
+        </div>
+      </div>
+
+      <!-- Report Filters -->
+      <div class="glass-panel attendance-control-bar" style="margin-bottom: 1.5rem;">
+        <div class="form-group">
+          <label for="reportSemesterSelect">Semester</label>
+          <select id="reportSemesterSelect" class="form-select">
+            <option value="ALL">All Semesters</option>
+            <option value="BCA 1st Sem">BCA 1st Semester</option>
+            <option value="BCA 2nd Sem">BCA 2nd Semester</option>
+            <option value="BCA 3rd Sem" selected>BCA 3rd Semester</option>
+            <option value="BCA 4th Sem">BCA 4th Semester</option>
+            <option value="BCA 5th Sem">BCA 5th Semester</option>
+            <option value="BCA 6th Sem">BCA 6th Semester</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="reportSubjectSelect">Subject</label>
+          <select id="reportSubjectSelect" class="form-select">
+            <option value="ALL">All Subjects</option>
+            <!-- Dynamically populated -->
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="reportStartDate">From Date</label>
+          <input type="date" id="reportStartDate" class="form-input">
+        </div>
+
+        <div class="form-group">
+          <label for="reportEndDate">To Date</label>
+          <input type="date" id="reportEndDate" class="form-input">
+        </div>
+
+        <div style="display: flex; gap: 0.5rem;">
+          <button type="button" class="btn-primary" id="btnFilterReports" style="height: 42px;">
+            Filter Analytics
+          </button>
+        </div>
+      </div>
+
+      <!-- Reports Sub-Tabs: All Students vs Defaulters (<75%) -->
+      <div style="display: flex; gap: 0.6rem; margin-bottom: 1.2rem;">
+        <button type="button" id="tabSubReportAll" class="btn-batch active" style="padding: 0.5rem 1.2rem; border-radius: var(--radius-pill); background: var(--accent-gradient); color: #fff;">
+          All Students Summary
+        </button>
+        <button type="button" id="tabSubReportDefaulters" class="btn-batch" style="padding: 0.5rem 1.2rem; border-radius: var(--radius-pill); background: rgba(244, 63, 94, 0.12); color: #fb7185; border: 1px solid var(--color-absent-border);">
+          Defaulters List (< 75%)
+        </button>
+      </div>
+
+      <!-- Report Summary KPIs -->
+      <div class="stats-grid" style="margin-bottom: 1.5rem;">
+        <div class="stat-card glass-panel">
+          <div class="stat-header">
+            <span class="stat-label">Total Working Lectures</span>
+            
+          </div>
+          <div class="stat-value" id="repTotalSessions">0</div>
+          <div class="stat-desc">Excludes declared vacations</div>
+        </div>
+
+        <div class="stat-card glass-panel present-card">
+          <div class="stat-header">
+            <span class="stat-label">Total Present Marks</span>
+            
+          </div>
+          <div class="stat-value" id="repTotalPresent">0</div>
+          <div class="stat-desc" style="color: var(--color-present);">Total student attendances</div>
+        </div>
+
+        <div class="stat-card glass-panel absent-card">
+          <div class="stat-header">
+            <span class="stat-label">Total Absent Marks</span>
+            
+          </div>
+          <div class="stat-value" id="repTotalAbsent">0</div>
+          <div class="stat-desc" style="color: var(--color-absent);">Unexcused absences</div>
+        </div>
+
+        <div class="stat-card glass-panel warning-card">
+          <div class="stat-header">
+            <span class="stat-label">Total Approved Leaves</span>
+            
+          </div>
+          <div class="stat-value" id="repTotalLeave">0</div>
+          <div class="stat-desc" style="color: var(--color-leave);">Medical / duty leaves</div>
+        </div>
+      </div>
+
+      <!-- Report Table -->
+      <div class="glass-panel roster-card">
+        <div style="overflow-x: auto;">
+          <table class="custom-table" id="tableAttendanceReport">
+            <thead>
+              <tr>
+                <th>Roll No</th>
+                <th>Student Name</th>
+                <th>Semester</th>
+                <th>Total Classes</th>
+                <th>Present</th>
+                <th>Absent</th>
+                <th>Leave</th>
+                <th>Attendance %</th>
+                <th>Status</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyAttendanceReport">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ======================== MODALS ======================== -->
+
+  <!-- 1. Add / Edit Student Modal -->
+  <div id="modalStudent" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modalStudentTitle">Add New BCA Student</h3>
+        <button type="button" class="btn-close-modal" id="btnCloseStudentModal">&times;</button>
+      </div>
+      <form id="studentForm">
+        <input type="hidden" id="studentFormId">
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label for="formRollNo">Roll Number / Student ID *</label>
+          <input type="text" id="formRollNo" class="form-input" placeholder="e.g. BCA-23-015" required>
+        </div>
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label for="formName">Full Student Name *</label>
+          <input type="text" id="formName" class="form-input" placeholder="e.g. Rahul Sharma" required>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+          <div class="form-group">
+            <label for="formSemester">Semester *</label>
+            <select id="formSemester" class="form-select" required>
+              <option value="BCA 1st Sem">BCA 1st Semester</option>
+              <option value="BCA 2nd Sem">BCA 2nd Semester</option>
+              <option value="BCA 3rd Sem">BCA 3rd Semester</option>
+              <option value="BCA 4th Sem">BCA 4th Semester</option>
+              <option value="BCA 5th Sem">BCA 5th Semester</option>
+              <option value="BCA 6th Sem">BCA 6th Semester</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="formSection">Section</label>
+            <select id="formSection" class="form-select">
+              <option value="A">Section A</option>
+              <option value="B">Section B</option>
+              <option value="C">Section C</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label for="formEmail">Email Address</label>
+          <input type="email" id="formEmail" class="form-input" placeholder="e.g. rahul@bca.edu">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+          <div class="form-group">
+            <label for="formPhone">Phone Number</label>
+            <input type="tel" id="formPhone" class="form-input" placeholder="e.g. 9876543210">
+          </div>
+          <div class="form-group">
+            <label for="formGender">Gender</label>
+            <select id="formGender" class="form-select">
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" id="btnCancelStudentModal">Cancel</button>
+          <button type="submit" class="btn-primary" id="btnSaveStudentSubmit">Save Student</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. Declare Vacation Modal -->
+  <div id="modalVacation" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Declare Vacation / Holiday</h3>
+        <button type="button" class="btn-close-modal" id="btnCloseVacationModal">&times;</button>
+      </div>
+      <form id="vacationForm">
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label for="formVacationDate">Vacation Date *</label>
+          <input type="date" id="formVacationDate" class="form-input" required>
+        </div>
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label for="formVacationTitle">Vacation / Holiday Title *</label>
+          <input type="text" id="formVacationTitle" class="form-input" placeholder="e.g. Diwali Break, Tech Fest, Sports Day" required>
+        </div>
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label for="formVacationDesc">Description / Exemption Reason</label>
+          <textarea id="formVacationDesc" class="form-input" rows="3" placeholder="College holiday declared by Principal / HOD - no academic attendance required."></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" id="btnCancelVacationModal">Cancel</button>
+          <button type="submit" class="btn-vacation" style="color: #fff; background: #ec4899;">Confirm Vacation</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 3. Student Attendance History Modal -->
+  <div id="modalStudentHistory" class="modal-overlay">
+    <div class="modal-content" style="max-width: 680px;">
+      <div class="modal-header">
+        <div>
+          <h3 id="historyStudentName">Student Attendance Record</h3>
+          <span id="historyStudentRoll" class="student-roll-tag" style="margin-top: 0.3rem;">BCA-XX-XXX</span>
+        </div>
+        <button type="button" class="btn-close-modal" id="btnCloseHistoryModal">&times;</button>
+      </div>
+
+      <!-- History Stat Pills -->
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.8rem; margin-bottom: 1.5rem; text-align: center;">
+        <div style="background: rgba(255, 255, 255, 0.04); padding: 0.8rem; border-radius: var(--radius-md);">
+          <div style="font-size: 0.72rem; color: var(--text-dim);">ATTENDANCE %</div>
+          <div id="histPct" style="font-size: 1.4rem; font-weight: 800; color: #fff;">0%</div>
+        </div>
+        <div style="background: var(--color-present-bg); padding: 0.8rem; border-radius: var(--radius-md);">
+          <div style="font-size: 0.72rem; color: var(--color-present);">PRESENT</div>
+          <div id="histPresent" style="font-size: 1.4rem; font-weight: 800; color: var(--color-present);">0</div>
+        </div>
+        <div style="background: var(--color-absent-bg); padding: 0.8rem; border-radius: var(--radius-md);">
+          <div style="font-size: 0.72rem; color: var(--color-absent);">ABSENT</div>
+          <div id="histAbsent" style="font-size: 1.4rem; font-weight: 800; color: var(--color-absent);">0</div>
+        </div>
+        <div style="background: var(--color-leave-bg); padding: 0.8rem; border-radius: var(--radius-md);">
+          <div style="font-size: 0.72rem; color: var(--color-leave);">LEAVE</div>
+          <div id="histLeave" style="font-size: 1.4rem; font-weight: 800; color: var(--color-leave);">0</div>
+        </div>
+      </div>
+
+      <!-- History Table -->
+      <div style="max-height: 320px; overflow-y: auto;">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Subject</th>
+              <th>Faculty</th>
+              <th>Status</th>
+              <th>Remarks</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyStudentHistory">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" id="btnCloseHistoryBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- JavaScript Modules -->
+  <script src="js/auth.js"></script>
+  <script src="js/attendance.js"></script>
+  <script src="js/students.js"></script>
+  <script src="js/holidays.js"></script>
+  <script src="js/reports.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
